@@ -57,7 +57,7 @@ jobs:
           if [ "${{ github.event.inputs.terraform_action }}" = "plan" ]; then
             terraform plan -var-file=${{ github.event.inputs.environment }}.tfvars
           else
-            terraform apply -var-file=${{ github.event.inputs.terraform_action }}.tfvars -auto-approve
+            terraform apply -var-file=${{ github.event.inputs.environment }}.tfvars -auto-approve
           fi
 
       # 7️⃣ Notify
