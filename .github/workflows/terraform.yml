@@ -1,0 +1,65 @@
+name: Terraform CI/CD with GCP WIF
+
+# Trigger on PRs and manual dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy (dev/stage/prod)'
+        required: true
+        default: dev
+      terraform_action:
+        description: 'plan or apply'
+        required: true
+        default: plan
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write       # Required for OIDC
+      contents: read        # Required to read repo
+      pull-requests: write
+
+    steps:
+      # 1️⃣ Checkout code
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7.0
+
+      # 3️⃣ Authenticate to GCP using Workload Identity Federation
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: 'projects/558201769949/locations/global/workloadIdentityPools/demoworkload-identity-v4/providers/demoprovider'
+          service_account: 'demoservice-account@project-5010904a-a99d-4f40-866.iam.gserviceaccount.com'
+
+      # 4️⃣ Select environment folder
+      - name: Set Terraform working directory
+        run: |
+          echo "WORKING_DIR=envs/${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+
+      # 5️⃣ Initialize Terraform
+      - name: Terraform Init
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform init
+
+      # 6️⃣ Terraform Plan or Apply
+      - name: Terraform Plan / Apply
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          if [ "${{ github.event.inputs.terraform_action }}" = "plan" ]; then
+            terraform plan -var-file=${{ github.event.inputs.environment }}.tfvars
+          else
+            terraform apply -var-file=${{ github.event.inputs.terraform_action }}.tfvars -auto-approve
+          fi
+
+      # 7️⃣ Notify
+      - name: Notify
+        run: echo "Terraform ${{ github.event.inputs.terraform_action }} completed for environment ${{ github.event.inputs.environment }}"
