@@ -1,0 +1,58 @@
+name: Terraform Dev
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'envs/dev/**'
+      - 'modules/**'
+
+  push:
+    branches:
+      - main
+    paths:
+      - 'envs/dev/**'
+      - 'modules/**'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-dev:
+    name: Dev Plan/Apply
+    runs-on: ubuntu-latest
+    environment: dev
+
+    defaults:
+      run:
+        working-directory: ./envs/dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -var-file=dev.tfvars -no-color
+
+      - name: Terraform Apply
+        if: github.event_name == 'push'
+        run: terraform apply -var-file=dev.tfvars -auto-approve
