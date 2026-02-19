@@ -4,8 +4,9 @@ provider "google" {
   region  = var.region
 }
 
-module "vpc" {
-  source = "../../modules/vpc"
-  name   = var.vpc_name
-}
+
+#module "vpc" {
+#  source = "../../modules/vpc"
+#  name   = var.vpc_name
+# } 
 
