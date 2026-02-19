@@ -1,0 +1,59 @@
+name: Terraform GitOps
+
+on:
+  pull_request:
+    paths:
+      - 'envs/**'
+      - 'modules/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'envs/**'
+      - 'modules/**'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        environment: [dev, stage, prod]
+
+    environment: ${{ matrix.environment }}
+
+    defaults:
+      run:
+        working-directory: ./envs/${{ matrix.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -var-file=${{ matrix.environment }}.tfvars -no-color
+
+      - name: Terraform Apply
+        if: github.event_name == 'push'
+        run: terraform apply -var-file=${{ matrix.environment }}.tfvars -auto-approve
