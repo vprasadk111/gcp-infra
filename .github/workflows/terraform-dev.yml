@@ -37,7 +37,7 @@ jobs:
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: 'projects/558201769949/locations/global/workloadIdentityPools/myworkloadidentity/providers/demoprovider'
+          workload_identity_provider: 'projects/919342947452/locations/global/workloadIdentityPools/myworkloadidentity/providers/demoprovider'
           service_account: 'myserviceaccount@white-vortex-488506-f4.iam.gserviceaccount.com'
 
       - name: Setup Terraform
