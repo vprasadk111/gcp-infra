@@ -14,6 +14,8 @@ on:
     paths:
       - 'envs/dev/**'
       - 'modules/**'
+      
+  workflow_dispatch:    
 
 permissions:
   id-token: write
